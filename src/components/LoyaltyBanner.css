@@ -1,0 +1,77 @@
+.loyalty-banner {
+  position: absolute;
+  /* align with main-content: sidebar + layout padding (24px) + gap (24px) + inner margin (12px) */
+  left: calc(var(--sidebar-width) + var(--spacing-lg) + var(--spacing-lg) + 12px);
+  top: calc(var(--spacing-lg) + 12px);
+  max-width: min(560px, calc(100% - var(--sidebar-width) - 96px));
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--border-radius-pill);
+  font-size: var(--text-sm);
+  font-family: var(--font-secondary);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: all;
+}
+
+.loyalty-banner--recognized {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  color: #14532d;
+}
+
+.loyalty-banner--not-found {
+  background: rgba(248, 123, 50, 0.12);
+  border: 1px solid rgba(248, 123, 50, 0.22);
+  color: #7c2d12;
+}
+
+.banner-icon {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.banner-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.banner-pts {
+  opacity: 0.7;
+}
+
+.banner-action {
+  flex-shrink: 0;
+  background: var(--primary-accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-primary);
+  padding: 4px 12px;
+  border-radius: var(--border-radius-pill);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.banner-action:hover { background: var(--primary-hover); }
+
+.banner-dismiss {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: currentColor;
+  opacity: 0.5;
+  padding: 2px;
+  transition: opacity 0.15s;
+}
+.banner-dismiss:hover { opacity: 1; }

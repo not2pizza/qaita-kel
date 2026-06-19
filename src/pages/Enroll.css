@@ -1,0 +1,161 @@
+.enroll-page {
+  position: fixed;
+  inset: 0;
+  background: #080c10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: var(--spacing-lg);
+}
+
+.enroll-back {
+  position: absolute;
+  top: var(--spacing-lg);
+  left: var(--spacing-lg);
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--border-radius-pill);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+}
+.enroll-back:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+.enroll-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-lg);
+  width: 100%;
+  max-width: 360px;
+  color: #fff;
+}
+
+.enroll-icon {
+  font-size: 3rem;
+}
+
+.enroll-step h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.enroll-step p {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.name-input {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--border-radius-md);
+  color: #fff;
+  font-size: 1.1rem;
+  font-family: var(--font-primary);
+  padding: var(--spacing-md) var(--spacing-lg);
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.name-input::placeholder { color: rgba(255,255,255,0.25); }
+.name-input:focus { border-color: rgba(255,255,255,0.35); }
+
+.enroll-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  background: var(--primary-accent);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: var(--font-primary);
+  padding: var(--spacing-md) var(--spacing-2xl);
+  border-radius: var(--border-radius-pill);
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  transition: background 0.2s, opacity 0.2s;
+}
+.enroll-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.enroll-btn-primary:not(:disabled):hover {
+  background: var(--primary-hover);
+}
+
+/* Camera */
+.enroll-camera-wrapper {
+  position: relative;
+  width: clamp(260px, 36vh, 360px);
+  aspect-ratio: 1;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #111;
+}
+
+.enroll-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+
+.enroll-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  border: 2px solid var(--primary-accent);
+  pointer-events: none;
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.capture-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  font-weight: 900;
+  color: #fff;
+  background: rgba(0,0,0,0.35);
+  letter-spacing: -0.05em;
+}
+
+.capture-progress {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.capture-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.3s;
+}
+.capture-dot.filled {
+  background: #22c55e;
+}

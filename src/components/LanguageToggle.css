@@ -1,0 +1,52 @@
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--border-radius-pill);
+}
+
+.lang-opt {
+  position: relative;
+  min-width: 44px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: color 0.2s;
+  z-index: 1;
+}
+
+.lang-opt-label {
+  position: relative;
+  z-index: 2;
+}
+
+.lang-active-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--border-radius-pill);
+  z-index: 0;
+}
+
+/* Light variant — sits on dark/photo backgrounds (attract screen). */
+.lang-toggle-light {
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.lang-toggle-light .lang-opt { color: rgba(255, 255, 255, 0.8); }
+.lang-toggle-light .lang-opt.active { color: #fff; }
+.lang-toggle-light .lang-active-pill { background: rgba(255, 255, 255, 0.28); }
+
+/* Dark variant — sits on the light glass UI (dock). */
+.lang-toggle-dark {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--glass-border);
+}
+.lang-toggle-dark .lang-opt { color: var(--text-muted); }
+.lang-toggle-dark .lang-opt.active { color: #fff; }
+.lang-toggle-dark .lang-active-pill { background: var(--primary-accent); }

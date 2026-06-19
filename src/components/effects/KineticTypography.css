@@ -1,0 +1,28 @@
+.kinetic-container {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  width: 100vw;
+  transform: translateY(-50%) rotate(-5deg);
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+.kinetic-scroller {
+  display: flex;
+  white-space: nowrap;
+  font-size: 15vw;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.05); /* very subtle light theme stroke */
+  line-height: 1;
+  font-family: 'Inter', sans-serif;
+}
+
+.kinetic-scroller span {
+  display: block;
+  margin-right: 2vw;
+}

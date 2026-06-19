@@ -1,0 +1,319 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: 500px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8);
+  border-radius: var(--border-radius-lg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  /* Allow overflow for magnetic glow, hide inner elements via border-radius */
+}
+
+/* Rounded corners for the inner scrolling area so image doesn't bleed out top */
+.modal-inner-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.close-btn {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  color: var(--text-main);
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.05) rotate(90deg);
+}
+
+.cinematic-modal {
+  max-width: 900px !important;
+  width: 90vw;
+  /* Content-driven height, capped so it never exceeds the viewport. */
+  height: min(85vh, 720px);
+  max-height: 90dvh;
+}
+
+.cinematic-split {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  height: 100%;
+  min-height: 0;
+}
+
+.cinematic-media {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.media-asset {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+}
+
+.image-asset {
+  object-fit: contain;
+  padding: var(--spacing-xl);
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.15));
+  transform: scale(1.1);
+}
+
+.cinematic-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 70%, rgba(255,255,255,0.4) 100%);
+  pointer-events: none;
+}
+
+.cinematic-content {
+  padding: clamp(20px, 3vw, 48px) !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow inner scroll area to shrink */
+  gap: var(--spacing-md);
+}
+
+/* Scrolling body — content starts at the top (no centering) so nothing clips */
+.modal-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Pinned footer holding the Add-to-Cart button — never scrolls away */
+.modal-footer {
+  flex-shrink: 0;
+  padding-top: var(--spacing-md);
+}
+
+/* Custom scrollbar for modal */
+.modal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+}
+
+.modal-scroll h2 {
+  font-size: var(--text-h2);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-main);
+}
+
+.modal-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-secondary);
+}
+
+.modal-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #b8860b;
+}
+
+.modal-desc {
+  margin-top: var(--spacing-sm);
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.modal-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary-accent);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.customization-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.customization-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-muted);
+}
+
+/* Beautiful Neumorphic / Glass Pill Segments */
+.options-row, .options-grid {
+  display: flex;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  border-radius: var(--border-radius-pill);
+  padding: 4px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: var(--border-radius-md);
+}
+
+.option-btn {
+  flex: 1;
+  min-height: var(--touch-min);
+  padding: 12px var(--spacing-sm);
+  position: relative;
+  border-radius: var(--border-radius-pill);
+  color: #7a7a7a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  z-index: 1;
+  transition: color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.options-grid .option-btn {
+  border-radius: var(--border-radius-sm);
+}
+
+.options-grid .option-active-bg {
+  border-radius: var(--border-radius-sm);
+}
+
+.option-btn.active {
+  color: white;
+}
+
+.option-btn span {
+  position: relative;
+  z-index: 2;
+}
+
+.option-active-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary-accent) 0%, #ff5e62 100%);
+  border-radius: var(--border-radius-pill);
+  box-shadow: 0 4px 12px rgba(248, 123, 50, 0.3);
+  z-index: 0;
+}
+
+.add-to-cart-wrapper {
+  position: relative;
+}
+
+.add-to-cart-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary-accent) 0%, #ff5e62 100%);
+  filter: blur(20px);
+  opacity: 0;
+  transition: opacity 0.3s;
+  border-radius: var(--border-radius-pill);
+  z-index: -1;
+}
+
+.add-to-cart-btn:active + .add-to-cart-glow {
+  opacity: 0.4;
+}
+
+.add-to-cart-btn {
+  width: 100%;
+  padding: var(--spacing-lg);
+  background: #1d1d1f;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: var(--border-radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.add-to-cart-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s;
+}
+
+.add-to-cart-btn:hover::after {
+  left: 150%;
+}
+
+.add-to-cart-btn.added {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+}

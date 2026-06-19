@@ -1,0 +1,17 @@
+{
+  "name": "Antigravity Coffee Co.",
+  "short_name": "Antigravity",
+  "description": "Self-order kiosk with face-recognition loyalty.",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#f7f9fa",
+  "theme_color": "#f7f9fa",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
