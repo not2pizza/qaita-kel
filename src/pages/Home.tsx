@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Star, RotateCcw } from 'lucide-react';
+import { ChevronRight, Star, RotateCcw, MapPin } from 'lucide-react';
 import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
 import { useLoyaltyStore } from '../store/useLoyaltyStore';
 import { getTier } from '../store/useLoyaltyStore';
@@ -18,7 +18,7 @@ const TIER_EMOJI: Record<string, string> = { Bronze: '🥉', Silver: '🥈', Gol
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { scanState, products } = useFaceRecognition();
+  const { scanState, products, branch, kiosk } = useFaceRecognition();
   const { currentCustomer } = useLoyaltyStore();
   const addItem = useCartStore(s => s.addItem);
   const brand = useBrand();
@@ -237,6 +237,25 @@ export const Home: React.FC = () => {
           )}
         </motion.div>
       </div>
+
+      {(branch?.name || kiosk?.code) && (
+        <motion.div
+          className="home-location"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+        >
+          {branch?.name && (
+            <span className="home-location-place">
+              <MapPin size={16} strokeWidth={2.4} />
+              {branch.name}{branch.address ? <span className="home-location-addr"> · {branch.address}</span> : null}
+            </span>
+          )}
+          {kiosk?.code && (
+            <span className="home-location-code">{kiosk.label ? `${kiosk.label} · ` : ''}{kiosk.code}</span>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 };

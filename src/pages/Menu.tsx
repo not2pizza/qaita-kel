@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Star, Flame, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Flame, RotateCcw, MapPin } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ProductDetailModal } from '../components/ProductDetailModal';
 import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
@@ -21,7 +21,7 @@ export const Menu: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [recentOrders, setRecentOrders] = useState<PastOrder[]>([]);
-  const { scanState, products } = useFaceRecognition();
+  const { scanState, products, branch } = useFaceRecognition();
   const { currentCustomer } = useLoyaltyStore();
   const addItem = useCartStore(s => s.addItem);
   const { t } = useLanguage();
@@ -192,13 +192,19 @@ export const Menu: React.FC = () => {
               </div>
             </div>
             <div className="hero-image-container">
-              <img src={featuredProduct.image} alt={featuredProduct.name} className="hero-image" />
+              <img src={featuredProduct.image || undefined} alt={featuredProduct.name} className="hero-image" />
             </div>
           </GlassCard>
         </div>
       )}
 
       <header className="menu-header">
+        {branch?.name && (
+          <span className="menu-branch">
+            <MapPin size={14} strokeWidth={2.4} />
+            {branch.name}{branch.address ? ` · ${branch.address}` : ''}
+          </span>
+        )}
         <h2>{t('menu.ourMenu')}</h2>
         <p>{t('menu.ourMenuSub')}</p>
       </header>
@@ -219,19 +225,14 @@ export const Menu: React.FC = () => {
       </div>
 
       <div className="product-grid-wrap">
-        <motion.div
-          key={activeCategory}
-          className="product-grid"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {filteredProducts.map((product) => (
+        <div key={activeCategory} className="product-grid">
+          {filteredProducts.map((product, i) => (
             <GlassCard
               key={product.id}
               className="product-card"
               noPadding={true}
-              animateIn={false}
+              animateIn={true}
+              delay={Math.min(i * 0.04, 0.4)}
               onClick={() => setSelectedProduct(product)}
             >
               <div className="product-image-container">
@@ -239,7 +240,7 @@ export const Menu: React.FC = () => {
                   <span className={`product-tag tag-${product.tag.toLowerCase()}`}>{product.tag}</span>
                 )}
                 <img
-                  src={product.image}
+                  src={product.image || undefined}
                   alt={product.name}
                   className="product-image"
                 />
@@ -271,9 +272,17 @@ export const Menu: React.FC = () => {
               </div>
             </GlassCard>
           ))}
-        </motion.div>
+        </div>
       </div>
-      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      <AnimatePresence>
+        {selectedProduct && (
+          <ProductDetailModal
+            key={selectedProduct.id}
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

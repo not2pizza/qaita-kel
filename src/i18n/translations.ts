@@ -72,6 +72,7 @@ const en = {
   'reg.finish': 'Finish & order',
   'reg.creating': 'Creating…',
   'reg.couldntRegister': "Couldn't register: {err}",
+  'reg.errorGeneric': "Couldn't save your details — please try again, or tap Skip to order.",
 
   'success.thanks': 'Thanks, {name}!',
   'success.confirmed': 'Order Confirmed!',
@@ -147,6 +148,7 @@ const ru: Record<TransKey, string> = {
   'reg.finish': 'Готово, заказать',
   'reg.creating': 'Создаём…',
   'reg.couldntRegister': 'Не удалось зарегистрировать: {err}',
+  'reg.errorGeneric': 'Не удалось сохранить данные — попробуйте ещё раз или нажмите «Пропустить».',
 
   'success.thanks': 'Спасибо, {name}!',
   'success.confirmed': 'Заказ принят!',
@@ -220,6 +222,7 @@ const kk: Record<TransKey, string> = {
   'reg.finish': 'Дайын, тапсырыс беру',
   'reg.creating': 'Жасалуда…',
   'reg.couldntRegister': 'Тіркеу мүмкін болмады: {err}',
+  'reg.errorGeneric': 'Деректерді сақтау мүмкін болмады — қайталап көріңіз немесе «Өткізіп жіберу» басыңыз.',
 
   'success.thanks': 'Рахмет, {name}!',
   'success.confirmed': 'Тапсырыс қабылданды!',

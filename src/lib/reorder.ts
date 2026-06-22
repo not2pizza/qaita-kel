@@ -3,19 +3,17 @@ import type { PastOrder } from './supabaseService';
 import type { Product } from '../data/products';
 
 // Turn a past order into cart items, re-resolving each product's image from the
-// live menu and preserving the exact customisation (size / milk / syrup / qty).
+// live menu and preserving the exact chosen modifiers + quantity.
 export function orderToCartItems(order: PastOrder, products: Product[]): CartItem[] {
   return order.items.map(it => {
-    const size = (it.size as 'S' | 'M' | 'L') ?? 'M';
+    const sig = it.modifiers.map(m => m.optionId ?? m.optionName).sort().join(',');
     return {
-      cartItemId: `${it.productId ?? it.name}-${size}-${it.milk ?? ''}-${it.syrup ?? ''}`,
+      cartItemId: `${it.productId ?? it.name}::${sig}`,
       productId: it.productId ?? `past-${it.name}`,
       name: it.name,
       price: it.unitPrice,
       image: products.find(p => p.id === it.productId)?.image ?? '',
-      size,
-      milk: it.milk ?? '',
-      syrup: it.syrup ?? '',
+      modifiers: it.modifiers,
       quantity: it.quantity,
     };
   });

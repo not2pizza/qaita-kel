@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { getTier, WELCOME_DEALS, setLoyaltyTiers, type Tier } from '../store/useLoyaltyStore';
 import type { LoyaltyCustomer } from '../store/useLoyaltyStore';
+import type { SelectedModifier } from '../store/useCartStore';
 import type { Product } from '../data/products';
 import { DEFAULT_BRAND, type BrandSettings, type Lang } from './theme';
 
@@ -192,16 +193,95 @@ export async function fetchProducts(branchId: string): Promise<Product[]> {
     });
 }
 
+// ---------------------------------------------------------------------------
+// Product modifiers (data-driven add-ons: Size, Milk, Syrup, Extras, …)
+// ---------------------------------------------------------------------------
+export interface ModifierOption {
+  id: string;            // UI key (= dbId for DB rows)
+  dbId: string | null;   // modifier_options.id (null for the hardcoded fallback)
+  name: string;
+  priceDelta: number;
+  isDefault: boolean;
+}
+export interface ModifierGroup {
+  id: string;
+  dbId: string | null;   // modifier_groups.id
+  name: string;
+  selectionType: 'single' | 'multiple';
+  minSelections: number;
+  maxSelections: number;
+  options: ModifierOption[];
+}
+
+// Modifier groups + options attached to a product, with per-branch price/
+// availability overrides applied. Returns [] if the product has none or the
+// modifier tables aren't seeded yet (caller falls back to a hardcoded set).
+export async function fetchProductModifiers(productId: string, branchId: string): Promise<ModifierGroup[]> {
+  const { data, error } = await supabase
+    .from('product_modifier_groups')
+    .select(`
+      sort_order, min_selections, max_selections,
+      modifier_groups (
+        id, name, selection_type, min_selections, max_selections, is_active, sort_order,
+        modifier_options ( id, name, price_delta, is_default, is_active, sort_order )
+      )
+    `)
+    .eq('product_id', productId)
+    .order('sort_order', { ascending: true });
+
+  if (error || !data) return [];
+
+  // Branch-level overrides (price + availability) keyed by option id.
+  const overrides = new Map<string, { priceDelta: number | null; available: boolean }>();
+  const { data: bmo } = await supabase
+    .from('branch_modifier_options')
+    .select('modifier_option_id, price_delta, is_available')
+    .eq('branch_id', branchId);
+  for (const o of (bmo ?? []) as Array<{ modifier_option_id: string; price_delta: number | null; is_available: boolean }>) {
+    overrides.set(o.modifier_option_id, { priceDelta: o.price_delta, available: o.is_available });
+  }
+
+  type GRow = {
+    id: string; name: string; selection_type: 'single' | 'multiple';
+    min_selections: number; max_selections: number; is_active: boolean; sort_order: number;
+    modifier_options: Array<{ id: string; name: string; price_delta: number; is_default: boolean; is_active: boolean; sort_order: number }>;
+  };
+  type PMG = { sort_order: number; min_selections: number | null; max_selections: number | null; modifier_groups: GRow | null };
+
+  const groups: ModifierGroup[] = [];
+  for (const row of data as unknown as PMG[]) {
+    const g = row.modifier_groups;
+    if (!g || !g.is_active) continue;
+    const options = (g.modifier_options ?? [])
+      .filter(o => o.is_active)
+      .map(o => ({ o, ov: overrides.get(o.id) }))
+      .filter(({ ov }) => !ov || ov.available)            // drop branch-disabled options
+      .sort((a, b) => a.o.sort_order - b.o.sort_order)
+      .map(({ o, ov }) => ({
+        id: o.id, dbId: o.id, name: o.name,
+        priceDelta: Number(ov?.priceDelta ?? o.price_delta),
+        isDefault: o.is_default,
+      }));
+    if (options.length === 0) continue;
+    groups.push({
+      id: g.id, dbId: g.id, name: g.name,
+      selectionType: g.selection_type,
+      minSelections: row.min_selections ?? g.min_selections,
+      maxSelections: row.max_selections ?? g.max_selections,
+      options,
+    });
+  }
+  return groups;
+}
+
 // Real "Order again": the customer's most recent full orders, with each line
-// item's customisation, so the whole order can be repeated in one tap.
+// item's chosen modifiers, so the whole order can be repeated in one tap.
 export interface PastOrderItem {
   productId: string | null;
   name: string;
   unitPrice: number;
   quantity: number;
-  size?: string;
-  milk?: string;
-  syrup?: string;
+  modifiers: SelectedModifier[];
 }
 export interface PastOrder {
   id: string;
@@ -211,12 +291,30 @@ export interface PastOrder {
 }
 
 // Stable signature of an order's contents (ignores id/date) — two orders with
-// the same items+options+quantities share a signature.
+// the same items+modifiers+quantities share a signature.
 function orderSignature(o: PastOrder): string {
   return o.items
-    .map(i => `${i.productId ?? i.name}|${i.size ?? ''}|${i.milk ?? ''}|${i.syrup ?? ''}|${i.quantity}`)
+    .map(i => `${i.productId ?? i.name}|${i.modifiers.map(m => m.optionId ?? m.optionName).sort().join('+')}|${i.quantity}`)
     .sort()
     .join('~');
+}
+
+// Rebuild chosen modifiers from an order_item's options jsonb. New orders store
+// { modifiers: [...] }; legacy orders stored { size, milk, syrup }.
+function extractModifiers(
+  options: { modifiers?: SelectedModifier[]; size?: string; milk?: string; syrup?: string } | null
+): SelectedModifier[] {
+  if (!options) return [];
+  if (Array.isArray(options.modifiers)) return options.modifiers;
+  const legacy: SelectedModifier[] = [];
+  const push = (groupName: string, optionName?: string) => {
+    if (optionName && optionName.toLowerCase() !== 'none')
+      legacy.push({ groupId: null, groupName, optionId: null, optionName, priceDelta: 0 });
+  };
+  push('Size', options.size);
+  push('Milk', options.milk);
+  push('Syrup', options.syrup);
+  return legacy;
 }
 
 // Raw fetch (keeps repeats — needed for frequency analysis).
@@ -240,7 +338,7 @@ async function fetchOrdersRaw(customerId: string, limit: number): Promise<PastOr
       name: string;
       unit_price: number;
       quantity: number;
-      options: { size?: string; milk?: string; syrup?: string } | null;
+      options: { modifiers?: SelectedModifier[]; size?: string; milk?: string; syrup?: string } | null;
     }>;
   }>)
     .map(o => ({
@@ -252,9 +350,7 @@ async function fetchOrdersRaw(customerId: string, limit: number): Promise<PastOr
         name: it.name,
         unitPrice: Number(it.unit_price),
         quantity: it.quantity,
-        size: it.options?.size,
-        milk: it.options?.milk,
-        syrup: it.options?.syrup,
+        modifiers: extractModifiers(it.options),
       })),
     }))
     .filter(o => o.items.length > 0);
@@ -445,6 +541,7 @@ export interface NewOrderItem {
   unitPrice: number;
   quantity: number;
   options?: Record<string, unknown>;
+  modifiers?: SelectedModifier[]; // written to order_item_modifiers (+ options.modifiers)
 }
 
 export async function createOrder(params: {
@@ -492,12 +589,38 @@ export async function createOrder(params: {
     name: it.name,
     unit_price: it.unitPrice,
     quantity: it.quantity,
-    options: it.options ?? null,
+    // Keep a denormalized copy of modifiers in options so "Order again" can
+    // rebuild the exact line without a join (resilient to schema differences).
+    options: it.options ?? (it.modifiers ? { modifiers: it.modifiers } : null),
     line_total: Number((it.unitPrice * it.quantity).toFixed(2)),
   }));
 
-  const { error: iErr } = await supabase.from('order_items').insert(itemRows);
+  const { data: insertedItems, error: iErr } = await supabase
+    .from('order_items').insert(itemRows).select('id');
   if (iErr) console.error('Failed to save order items:', iErr.message);
+
+  // Normalized modifier records (for the owner panel / reporting). Best-effort —
+  // a missing order_item_modifiers table must not fail the order.
+  if (insertedItems && insertedItems.length === params.items.length) {
+    const modRows: Array<Record<string, unknown>> = [];
+    params.items.forEach((it, idx) => {
+      for (const m of it.modifiers ?? []) {
+        modRows.push({
+          order_item_id: (insertedItems[idx] as { id: string }).id,
+          modifier_group_id: m.groupId,
+          modifier_option_id: m.optionId,
+          group_name: m.groupName,
+          option_name: m.optionName,
+          unit_price_delta: m.priceDelta,
+          quantity: 1,
+        });
+      }
+    });
+    if (modRows.length) {
+      const { error: mErr } = await supabase.from('order_item_modifiers').insert(modRows);
+      if (mErr) console.warn('order_item_modifiers not saved:', mErr.message);
+    }
+  }
 
   // Settle the balance in one update: + earned, − redeemed.
   let newBalance: number | null = null;

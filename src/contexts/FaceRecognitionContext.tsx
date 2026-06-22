@@ -8,7 +8,8 @@ import {
   fetchProducts,
   type LoyaltyConfig,
 } from '../lib/supabaseService';
-import { loadBranch, getBranchId } from '../lib/branch';
+import { loadBranch, loadBranchById, getBranchId, type Branch } from '../lib/branch';
+import { registerKiosk, type Kiosk } from '../lib/kiosk';
 import { FALLBACK_PRODUCTS, type Product } from '../data/products';
 import { sound } from '../lib/sound';
 import type { ScanState } from '../components/LoyaltyBanner';
@@ -27,6 +28,10 @@ interface FaceRecognitionContextValue {
   products: Product[];
   loyaltyConfig: LoyaltyConfig;
   branchId: string | null;
+  /** The active branch (name/address) this kiosk is attributed to. */
+  branch: Branch | null;
+  /** This physical device's fleet identity (code, label, branch binding). */
+  kiosk: Kiosk | null;
   /** Face descriptors of the current unknown visitor, buffered in memory so
    *  sign-up at checkout needs only a phone + name (no separate face scan). */
   capturedFace: number[][];
@@ -42,6 +47,8 @@ const FaceRecognitionContext = createContext<FaceRecognitionContextValue>({
   products: FALLBACK_PRODUCTS,
   loyaltyConfig: DEFAULT_CONFIG,
   branchId: null,
+  branch: null,
+  kiosk: null,
   capturedFace: [],
   clearCapturedFace: () => {},
   captureNow: async () => [],
@@ -69,6 +76,8 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
   const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
   const [loyaltyConfig, setLoyaltyConfig] = useState<LoyaltyConfig>(DEFAULT_CONFIG);
   const [branchId, setBranchId] = useState<string | null>(null);
+  const [branch, setBranch] = useState<Branch | null>(null);
+  const [kiosk, setKiosk] = useState<Kiosk | null>(null);
   const [capturedFace, setCapturedFace] = useState<number[][]>([]);
   const capturedFaceRef = useRef<number[][]>([]);
 
@@ -124,8 +133,19 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
       // ── 1) App data — loaded independently of the camera. This warms the
       // Supabase connection and makes branch/config/menu/customers ready BEFORE
       // anyone can reach checkout, so first-visit sign-up isn't a cold-start race.
-      const branch = await loadBranch();
-      if (mountedRef.current && branch) setBranchId(branch.id);
+      // Resolve the default branch, then this device's kiosk identity. A kiosk
+      // bound to a different branch (by the admin) overrides the default.
+      const defaultBranch = await loadBranch();
+      const kioskInfo = await registerKiosk(defaultBranch?.id ?? null);
+      let activeBranch = defaultBranch;
+      if (kioskInfo.branchId && kioskInfo.branchId !== defaultBranch?.id) {
+        activeBranch = (await loadBranchById(kioskInfo.branchId)) ?? defaultBranch;
+      }
+      if (mountedRef.current) {
+        setBranchId(activeBranch?.id ?? null);
+        setBranch(activeBranch);
+        setKiosk(kioskInfo);
+      }
 
       const [, loadedCustomers, config] = await Promise.all([
         faceRecognition.loadModels(),
@@ -139,8 +159,8 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
       faceRecognition.loadCustomerDescriptors(loadedCustomers);
       setLoyaltyConfig(config);
 
-      if (branch) {
-        const menu = await fetchProducts(branch.id);
+      if (activeBranch) {
+        const menu = await fetchProducts(activeBranch.id);
         if (mountedRef.current && menu.length > 0) setProducts(menu);
       }
 
@@ -206,7 +226,7 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
   }, []);
 
   return (
-    <FaceRecognitionContext.Provider value={{ scanState, stream, products, loyaltyConfig, branchId, capturedFace, clearCapturedFace, captureNow }}>
+    <FaceRecognitionContext.Provider value={{ scanState, stream, products, loyaltyConfig, branchId, branch, kiosk, capturedFace, clearCapturedFace, captureNow }}>
       {/* Single hidden video element — shared across the whole app */}
       <video ref={videoRef} style={{ display: 'none' }} muted playsInline />
       {children}

@@ -45,10 +45,10 @@ export const AppLayout: React.FC = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
-            initial={{ opacity: 0, scale: 0.97, filter: 'blur(8px)', y: 10 }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)', y: 0 }}
-            exit={{ opacity: 0, scale: 1.02, filter: 'blur(8px)', y: -10 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="page-wrapper"
           >
             <Outlet />
@@ -100,7 +100,15 @@ export const AppLayout: React.FC = () => {
             >
               <span className="dock-cart-icon">
                 <ShoppingBag size={20} />
-                <span className="dock-cart-badge">{cartCount}</span>
+                <motion.span
+                  key={cartCount}
+                  className="dock-cart-badge"
+                  initial={{ scale: 1.5 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+                >
+                  {cartCount}
+                </motion.span>
               </span>
               <span className="dock-cart-text">{t('dock.viewOrder')}</span>
               <span className="dock-cart-total">${cartTotal.toFixed(2)}</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trash2, Plus, Minus, CreditCard, ArrowLeft, Gift, Check } from 'lucide-react';
@@ -20,6 +20,7 @@ export const Cart: React.FC = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [appliedReward, setAppliedReward] = useState<Reward | null>(null);
+  const submittingRef = useRef(false);   // blocks double-tap → no duplicate orders
 
   // Load redeemable rewards the member can afford.
   useEffect(() => {
@@ -37,19 +38,22 @@ export const Cart: React.FC = () => {
 
   // Persist the order (+ points) and head to the success screen.
   const finalizeOrder = async (customer: LoyaltyCustomer | null) => {
+    if (submittingRef.current) return;   // already checking out — ignore repeat taps
+    submittingRef.current = true;
     const sub = getCartTotal();
     const disc = customer && appliedReward ? Math.min(appliedReward.amount, sub) : 0;
     const total = Number(((sub - disc) * 1.08).toFixed(2));
     const earned = customer ? Math.round(sub * loyaltyConfig.pointsPerDollar) : 0;
     const redeemed = customer && appliedReward ? appliedReward.costPoints : 0;
 
-    // Build order line items. Fallback ("seed-*") products have no DB id → null.
+    // Build order line items. Fallback ("seed-*"/"past-*") products have no DB id → null.
     const orderItems: NewOrderItem[] = items.map(it => ({
-      productId: it.productId.startsWith('seed-') ? null : it.productId,
+      productId: (it.productId.startsWith('seed-') || it.productId.startsWith('past-')) ? null : it.productId,
       name: it.name,
       unitPrice: it.price,
       quantity: it.quantity,
-      options: { size: it.size, milk: it.milk, syrup: it.syrup },
+      options: { modifiers: it.modifiers },
+      modifiers: it.modifiers,
     }));
 
     clearCart();
@@ -136,12 +140,17 @@ export const Cart: React.FC = () => {
               transition={{ delay: i * 0.05 }}
             >
               <GlassCard className="cart-item">
-                <img src={item.image} alt={item.name} className="cart-item-image" />
+                <img src={item.image || undefined} alt={item.name} className="cart-item-image" />
                 <div className="cart-item-info">
                   <h3>{item.name}</h3>
-                  <p className="cart-item-details">
-                    {t('cart.size')}: {item.size} | {item.milk} | {item.syrup}
-                  </p>
+                  {item.modifiers.length > 0 && (
+                    <p className="cart-item-details">
+                      {item.modifiers
+                        .filter(m => m.optionName.toLowerCase() !== 'none')
+                        .map(m => m.optionName)
+                        .join(' · ')}
+                    </p>
+                  )}
                   <p className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</p>
                 </div>
                 <div className="cart-item-actions">

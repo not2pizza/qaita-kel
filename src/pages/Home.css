@@ -35,6 +35,54 @@
   filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
 }
 
+/* Branch location — customer-facing, centered at the bottom of the attract
+   screen so people know which café they're at. The kiosk code sits beneath it,
+   small and faded, for managers/technicians only. */
+.home-location {
+  position: absolute;
+  /* Span full width and center children via align-items — NOT translateX, which
+     framer-motion's transform (translateY entrance) would clobber, shoving the
+     pill off-center to the right. */
+  left: 0;
+  right: 0;
+  bottom: calc(var(--spacing-xl) + env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 0 var(--spacing-lg);
+}
+
+.home-location-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: var(--border-radius-pill);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
+}
+.home-location-place svg { opacity: 0.9; flex-shrink: 0; }
+
+.home-location-addr { font-weight: 400; opacity: 0.85; }
+
+.home-location-code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+}
+
 .home-content {
   position: relative;
   z-index: 2;

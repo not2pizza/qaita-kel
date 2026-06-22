@@ -118,9 +118,11 @@ export const RegistrationModal: React.FC<Props> = ({
       sound.recognize();
       onComplete(customer);
     } else {
-      // Don't silently complete an anonymous order — let them retry.
+      // Don't silently complete an anonymous order — let them retry. Show a
+      // friendly message to the customer; keep the raw cause in the console.
       setBusy(false);
-      setError(t('reg.couldntRegister', { err: getLastEnrollError() || 'unknown error' }));
+      console.warn('Enrollment failed:', getLastEnrollError() || 'unknown error');
+      setError(t('reg.errorGeneric'));
     }
   };
 

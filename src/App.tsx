@@ -14,9 +14,6 @@ import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { FaceAuth } from './pages/FaceAuth';
 import { Enroll } from './pages/Enroll';
 import { Admin } from './pages/Admin';
-import { TouchTrail } from './components/effects/TouchTrail';
-import { FluidBackground } from './components/effects/FluidBackground';
-import { KineticTypography } from './components/effects/KineticTypography';
 
 // After a stretch of inactivity, abandon the session and return to the
 // attract screen so the next person starts fresh (no inherited cart/identity).
@@ -75,9 +72,6 @@ const AnimatedRoutes = () => {
   return (
     <>
       <IdleReset />
-      <FluidBackground />
-      <KineticTypography text="PREMIUM MATCHA • SIGNATURE ROAST • ANTIGRAVITY COFFEE •" baseVelocity={-2} />
-      <TouchTrail />
       <div className="ambient-blob blob-1" />
       <div className="ambient-blob blob-2" />
       <AnimatePresence mode="wait">
@@ -90,10 +84,10 @@ const AnimatedRoutes = () => {
 
           <Route element={
             <motion.div
-              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, scale: 0.99 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.99 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               style={{ width: '100%', height: '100%' }}
             >
               <AppLayout />

@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, Star, Search, Plus, Minus, Trash2, ScanFace, Calendar } from 'lucide-react';
+import { X, UserPlus, Star, Search, Plus, Minus, Trash2, ScanFace, Calendar, Monitor, Save, Check } from 'lucide-react';
 import { useLoyaltyStore, getTier, type LoyaltyCustomer } from '../store/useLoyaltyStore';
 import { fetchCustomers, adjustPoints, deactivateCustomer } from '../lib/supabaseService';
+import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
+import { fetchBranches, type Branch } from '../lib/branch';
+import { updateKiosk } from '../lib/kiosk';
 import './Admin.css';
 
 const TIER_COLOR: Record<string, string> = {
@@ -78,6 +81,8 @@ export const Admin: React.FC = () => {
           </motion.button>
         </header>
 
+        <KioskBindCard />
+
         <div className="admin-body">
           {/* Left: searchable member list */}
           <aside className="admin-list-pane">
@@ -147,6 +152,68 @@ export const Admin: React.FC = () => {
           </section>
         </div>
       </div>
+    </div>
+  );
+};
+
+// This device's fleet identity + branch binding. A manager opens the hidden
+// admin on the kiosk itself and assigns it here (stopgap until the owner panel).
+const KioskBindCard: React.FC = () => {
+  const { kiosk, branch } = useFaceRecognition();
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchId, setBranchId] = useState('');
+  const [label, setLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => { fetchBranches().then(setBranches); }, []);
+  useEffect(() => {
+    setBranchId(kiosk?.branchId ?? branch?.id ?? '');
+    setLabel(kiosk?.label ?? '');
+  }, [kiosk?.id, kiosk?.branchId, kiosk?.label, branch?.id]);
+
+  if (!kiosk) return null;
+
+  const canManage = !kiosk.local && !!kiosk.id;
+
+  const save = async () => {
+    if (!canManage || saving) return;
+    setSaving(true);
+    const ok = await updateKiosk(kiosk.id, { branchId: branchId || null, label: label.trim() || null });
+    setSaving(false);
+    if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+  };
+
+  return (
+    <div className="kiosk-card">
+      <div className="kiosk-card-id">
+        <Monitor size={22} />
+        <div className="kiosk-card-id-text">
+          <span className="kiosk-card-code">{kiosk.code}</span>
+          <span className="kiosk-card-device">device {kiosk.deviceId.slice(0, 8)}</span>
+        </div>
+      </div>
+
+      {canManage ? (
+        <div className="kiosk-card-fields">
+          <label className="kiosk-field">
+            <span>Label</span>
+            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Front counter" maxLength={40} />
+          </label>
+          <label className="kiosk-field">
+            <span>Branch</span>
+            <select value={branchId} onChange={e => setBranchId(e.target.value)}>
+              <option value="">— Unassigned —</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </label>
+          <button className="kiosk-save" onClick={save} disabled={saving}>
+            {saved ? <><Check size={16} /> Saved</> : <><Save size={16} /> {saving ? 'Saving…' : 'Save'}</>}
+          </button>
+        </div>
+      ) : (
+        <p className="kiosk-card-note">Run the kiosks migration (0003) in Supabase to bind this device to a branch.</p>
+      )}
     </div>
   );
 };

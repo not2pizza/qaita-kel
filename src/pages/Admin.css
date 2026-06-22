@@ -32,6 +32,86 @@
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
+/* ───────── This-kiosk binding card ───────── */
+.kiosk-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+
+.kiosk-card-id {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-main);
+}
+.kiosk-card-id-text { display: flex; flex-direction: column; line-height: 1.15; }
+.kiosk-card-code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--text-md);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.kiosk-card-device {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-secondary);
+}
+
+.kiosk-card-fields {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.kiosk-field { display: flex; flex-direction: column; gap: 4px; }
+.kiosk-field > span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.kiosk-field input,
+.kiosk-field select {
+  min-height: var(--touch-min);
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--glass-border);
+  background: #fff;
+  color: var(--text-main);
+  outline: none;
+}
+.kiosk-field input:focus,
+.kiosk-field select:focus { border-color: var(--primary-accent); }
+
+.kiosk-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch-min);
+  padding: 8px 18px;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary-accent);
+  border-radius: var(--border-radius-pill);
+}
+.kiosk-save:disabled { opacity: 0.6; }
+
+.kiosk-card-note {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-family: var(--font-secondary);
+}
+
 .admin-titles { flex-shrink: 0; }
 
 .admin-title {

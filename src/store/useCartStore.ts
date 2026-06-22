@@ -1,14 +1,22 @@
 import { create } from 'zustand';
 
+// One chosen modifier option (e.g. "Large", "Oat Milk", "Vanilla syrup").
+// DB ids are null for the hardcoded fallback set (when modifier tables are unseeded).
+export interface SelectedModifier {
+  groupId: string | null;
+  groupName: string;
+  optionId: string | null;
+  optionName: string;
+  priceDelta: number;
+}
+
 export interface CartItem {
   cartItemId: string; // unique ID to distinguish same products with different customizations
   productId: string;
   name: string;
-  price: number;
+  price: number;      // final unit price (product base + selected modifier deltas)
   image: string;
-  size: 'S' | 'M' | 'L';
-  milk: string;
-  syrup: string;
+  modifiers: SelectedModifier[];
   quantity: number;
 }
 

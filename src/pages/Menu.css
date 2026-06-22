@@ -1,6 +1,9 @@
 .menu-page {
   padding: var(--spacing-xl);
-  height: 100%;
+  /* Let the whole page grow with its content so the parent .page-wrapper scrolls
+     everything together (greeting + Order again + hero + grid) — not just the
+     product grid. min-height fills the viewport when content is short. */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -75,7 +78,11 @@
   padding-bottom: 4px;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;   /* momentum swipe on iPad */
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
 }
+.order-again-row > * { scroll-snap-align: start; }
 .order-again-row::-webkit-scrollbar { display: none; }
 
 .reorder-card {
@@ -335,6 +342,21 @@
   margin-bottom: var(--spacing-lg);
 }
 
+.menu-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--spacing-xs);
+  padding: 4px 12px 4px 10px;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary-accent);
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+}
+.menu-branch svg { flex-shrink: 0; }
+
 .menu-header h2 {
   font-size: var(--text-h2);
   color: var(--text-main);
@@ -390,12 +412,9 @@
 }
 
 .product-grid-wrap {
+  /* No own scroll — the whole .menu-page scrolls via .page-wrapper, so the hero
+     and "Order again" scroll away with the grid instead of staying pinned. */
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
 }
 
 .product-grid {
