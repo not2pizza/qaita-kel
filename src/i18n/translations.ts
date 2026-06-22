@@ -50,6 +50,8 @@ const en = {
   'cart.tax': 'Tax (8%)',
   'cart.total': 'Total',
   'cart.checkout': 'Checkout',
+  'cart.processing': 'Processing…',
+  'cart.orderFailed': "Order didn't go through — please try again or ask the cashier.",
   'cart.reward': 'Reward',
   'cart.size': 'Size',
 
@@ -73,6 +75,8 @@ const en = {
   'reg.creating': 'Creating…',
   'reg.couldntRegister': "Couldn't register: {err}",
   'reg.errorGeneric': "Couldn't save your details — please try again, or tap Skip to order.",
+  'reg.needFace': 'Look at the screen for a moment so we can save your face.',
+  'reg.phoneTooShort': 'Enter a valid phone number',
 
   'success.thanks': 'Thanks, {name}!',
   'success.confirmed': 'Order Confirmed!',
@@ -126,6 +130,8 @@ const ru: Record<TransKey, string> = {
   'cart.tax': 'Налог (8%)',
   'cart.total': 'Итого',
   'cart.checkout': 'Оплатить',
+  'cart.processing': 'Оформляем…',
+  'cart.orderFailed': 'Заказ не прошёл — попробуйте ещё раз или обратитесь к кассиру.',
   'cart.reward': 'Награда',
   'cart.size': 'Размер',
 
@@ -149,6 +155,8 @@ const ru: Record<TransKey, string> = {
   'reg.creating': 'Создаём…',
   'reg.couldntRegister': 'Не удалось зарегистрировать: {err}',
   'reg.errorGeneric': 'Не удалось сохранить данные — попробуйте ещё раз или нажмите «Пропустить».',
+  'reg.needFace': 'Посмотрите на экран пару секунд, чтобы мы сохранили ваше лицо.',
+  'reg.phoneTooShort': 'Введите корректный номер телефона',
 
   'success.thanks': 'Спасибо, {name}!',
   'success.confirmed': 'Заказ принят!',
@@ -200,6 +208,8 @@ const kk: Record<TransKey, string> = {
   'cart.tax': 'Салық (8%)',
   'cart.total': 'Жиыны',
   'cart.checkout': 'Төлеу',
+  'cart.processing': 'Өңделуде…',
+  'cart.orderFailed': 'Тапсырыс өтпеді — қайталап көріңіз немесе кассирге хабарласыңыз.',
   'cart.reward': 'Сыйлық',
   'cart.size': 'Көлемі',
 
@@ -223,6 +233,8 @@ const kk: Record<TransKey, string> = {
   'reg.creating': 'Жасалуда…',
   'reg.couldntRegister': 'Тіркеу мүмкін болмады: {err}',
   'reg.errorGeneric': 'Деректерді сақтау мүмкін болмады — қайталап көріңіз немесе «Өткізіп жіберу» басыңыз.',
+  'reg.needFace': 'Бетіңізді сақтау үшін экранға бірер секунд қараңыз.',
+  'reg.phoneTooShort': 'Дұрыс телефон нөмірін енгізіңіз',
 
   'success.thanks': 'Рахмет, {name}!',
   'success.confirmed': 'Тапсырыс қабылданды!',

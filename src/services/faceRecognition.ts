@@ -6,9 +6,22 @@ import * as faceapi from '@vladmandic/face-api';
 const LOCAL_MODEL_URL = '/models';
 const CDN_MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
 
+// Match tuning. A bit looser than before (was 0.4) so enrolled members aren't
+// missed; false positives are guarded separately by requiring 2 consecutive
+// agreeing frames before greeting (see FaceRecognitionContext).
+const MATCH_DISTANCE = 0.5;   // FaceMatcher threshold (distance > this → unknown)
+const MIN_CONFIDENCE = 0.5;   // 1 - distance must be at least this
+
+// A video frame is only usable once the element has decoded data and real
+// dimensions — scanning before that yields false "no face" results.
+function frameReady(v: HTMLVideoElement): boolean {
+  return v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0;
+}
+
 class FaceRecognitionService {
   private modelsLoaded = false;
   private labeledDescriptors: faceapi.LabeledFaceDescriptors[] = [];
+  private matcher: faceapi.FaceMatcher | null = null;
 
   private async loadFrom(url: string) {
     await Promise.all([
@@ -39,6 +52,11 @@ class FaceRecognitionService {
           .map(d => new Float32Array(d))
       ))
       .filter(ld => ld.descriptors.length > 0);
+
+    // Build the matcher ONCE here instead of per-frame (was rebuilt every scan).
+    this.matcher = this.labeledDescriptors.length > 0
+      ? new faceapi.FaceMatcher(this.labeledDescriptors, MATCH_DISTANCE)
+      : null;
   }
 
   // Scans a single frame. Returns null only when NO face is detected. When a
@@ -48,6 +66,7 @@ class FaceRecognitionService {
     video: HTMLVideoElement
   ): Promise<{ descriptor: number[]; match: { id: string; confidence: number } | null } | null> {
     if (!this.modelsLoaded) await this.loadModels();
+    if (!frameReady(video)) return null;   // no decoded frame yet → don't waste a scan
 
     const detection = await faceapi
       .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
@@ -58,21 +77,20 @@ class FaceRecognitionService {
 
     const descriptor = Array.from(detection.descriptor);
 
-    if (this.labeledDescriptors.length === 0) return { descriptor, match: null };
+    if (!this.matcher) return { descriptor, match: null };
 
-    const matcher = new faceapi.FaceMatcher(this.labeledDescriptors, 0.42);
-    const best = matcher.findBestMatch(detection.descriptor);
-
+    const best = this.matcher.findBestMatch(detection.descriptor);
     if (best.label === 'unknown') return { descriptor, match: null };
 
     const confidence = 1 - best.distance;
-    if (confidence < 0.6) return { descriptor, match: null };
+    if (confidence < MIN_CONFIDENCE) return { descriptor, match: null };
 
     return { descriptor, match: { id: best.label, confidence } }; // label === customer id
   }
 
   async captureDescriptor(video: HTMLVideoElement): Promise<number[] | null> {
     if (!this.modelsLoaded) await this.loadModels();
+    if (!frameReady(video)) return null;
 
     const detection = await faceapi
       .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())

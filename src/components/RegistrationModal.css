@@ -151,3 +151,9 @@
   font-weight: 600;
   color: #dc2626;
 }
+
+.reg-hint {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-top: -4px;
+}

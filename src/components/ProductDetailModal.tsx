@@ -205,10 +205,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                       <div className={useGrid ? 'options-grid' : 'options-row'}>
                         {g.options.map(o => {
                           const active = selected.includes(o.id);
+                          // Multiple-select at its limit: lock the unselected ones
+                          // (dim + un-tappable) so a tap that does nothing isn't
+                          // mistaken for a bug.
+                          const locked = g.selectionType === 'multiple'
+                            && !active && selected.length >= g.maxSelections;
                           return (
                             <button
                               key={o.id}
-                              className={`option-btn ${active ? 'active' : ''}`}
+                              className={`option-btn ${active ? 'active' : ''} ${locked ? 'locked' : ''}`}
+                              disabled={locked}
                               onClick={() => choose(g, o.id)}
                             >
                               {active && g.selectionType === 'single' && (

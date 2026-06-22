@@ -14,6 +14,7 @@ import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { FaceAuth } from './pages/FaceAuth';
 import { Enroll } from './pages/Enroll';
 import { Admin } from './pages/Admin';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // After a stretch of inactivity, abandon the session and return to the
 // attract screen so the next person starts fresh (no inherited cart/identity).
@@ -104,15 +105,17 @@ const AnimatedRoutes = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <BrandProvider>
-        <LanguageProvider>
-          <FaceRecognitionProvider>
-            <AnimatedRoutes />
-          </FaceRecognitionProvider>
-        </LanguageProvider>
-      </BrandProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <BrandProvider>
+          <LanguageProvider>
+            <FaceRecognitionProvider>
+              <AnimatedRoutes />
+            </FaceRecognitionProvider>
+          </LanguageProvider>
+        </BrandProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

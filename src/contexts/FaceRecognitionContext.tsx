@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { faceRecognition } from '../services/faceRecognition';
 import { useLoyaltyStore } from '../store/useLoyaltyStore';
 import {
@@ -39,6 +40,12 @@ interface FaceRecognitionContextValue {
   /** Returns the buffered face, or grabs a fresh sample from the live camera if
    *  the buffer is empty (so registration never saves a member with no face). */
   captureNow: () => Promise<number[][]>;
+  /** Pause/resume the recognition loop — e.g. while the sign-up modal captures,
+   *  so only ONE face detector runs on the shared camera at a time. */
+  pauseScanning: () => void;
+  resumeScanning: () => void;
+  /** Grab one fresh descriptor from the shared camera (used by sign-up). */
+  captureSample: () => Promise<number[] | null>;
 }
 
 const FaceRecognitionContext = createContext<FaceRecognitionContextValue>({
@@ -52,15 +59,21 @@ const FaceRecognitionContext = createContext<FaceRecognitionContextValue>({
   capturedFace: [],
   clearCapturedFace: () => {},
   captureNow: async () => [],
+  pauseScanning: () => {},
+  resumeScanning: () => {},
+  captureSample: async () => null,
 });
 
 // How many distinct samples of an unknown visitor we keep for enrollment.
 const MAX_CAPTURED_SAMPLES = 5;
+// Delay between scans (re-armed AFTER each scan finishes, so no overlap).
+const SCAN_INTERVAL_MS = 400;
 
 export const useFaceRecognition = () => useContext(FaceRecognitionContext);
 
 export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { customers, setCustomers, setCurrentCustomer, currentCustomer } = useLoyaltyStore();
+  const location = useLocation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<number | null>(null);
@@ -68,6 +81,13 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
   const customersRef = useRef(customers);
   const mountedRef = useRef(true);
   const recognizedRef = useRef(!!currentCustomer);
+  const scanPausedRef = useRef(false);
+  // Recognition only matters on the attract screen + menu (to greet). Pause it
+  // elsewhere (cart/admin/success/enroll) to save CPU on the kiosk.
+  const routeScanPausedRef = useRef(false);
+  // Requires N consecutive frames matching the same id before greeting — guards
+  // against a single-frame false positive (greeting / charging the wrong person).
+  const pendingMatchRef = useRef<{ id: string | null; count: number }>({ id: null, count: 0 });
 
   const [scanState, setScanState] = useState<ScanState>(
     currentCustomer ? 'recognized' : 'scanning'
@@ -98,6 +118,29 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
     }
   };
 
+  // One fresh descriptor from the shared camera (the sign-up modal polls this
+  // while the recognition loop is paused, so only one detector runs at a time).
+  const captureSample = async (): Promise<number[] | null> => {
+    if (!videoRef.current) return null;
+    try {
+      return await faceRecognition.captureDescriptor(videoRef.current);
+    } catch {
+      return null;
+    }
+  };
+
+  const pauseScanning = () => { scanPausedRef.current = true; };
+  const resumeScanning = () => {
+    scanPausedRef.current = false;
+    pendingMatchRef.current = { id: null, count: 0 };
+  };
+
+  // Only scan on the attract screen + menu; pause the loop elsewhere.
+  useEffect(() => {
+    const p = location.pathname;
+    routeScanPausedRef.current = !(p === '/' || p === '/menu');
+  }, [location.pathname]);
+
   // Keep descriptors in sync when new customers are enrolled
   useEffect(() => {
     customersRef.current = customers;
@@ -123,6 +166,10 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
     if (notFoundTimerRef.current) clearTimeout(notFoundTimerRef.current);
     notFoundTimerRef.current = window.setTimeout(() => {
       setScanState(prev => prev !== 'recognized' ? 'not-found' : prev);
+      // Analytics: a real (buffered) face was present but never matched → log once.
+      if (!recognizedRef.current && capturedFaceRef.current.length > 0) {
+        logRecognition({ branchId: getBranchId(), customerId: null, similarityScore: 0, result: 'not_found' });
+      }
     }, 10_000);
   };
 
@@ -181,54 +228,80 @@ export const FaceRecognitionProvider: React.FC<{ children: React.ReactNode }> = 
         // No camera access — leave scanState to the not-found timer.
       }
 
-      // ── 3) Recognition loop (no-ops until a camera stream exists).
-      intervalRef.current = window.setInterval(async () => {
-        if (!videoRef.current || !streamRef.current || !mountedRef.current) return;
-        if (recognizedRef.current) return;   // already recognised — pause scanning
-        try {
-          const result = await faceRecognition.scanFace(videoRef.current);
-          if (!result) return; // no face in frame
-          if (result.match) {
-            const customer = customersRef.current.find(c => c.id === result.match!.id);
-            if (customer) {
-              recognizedRef.current = true; // guard immediately against re-fire
-              clearCapturedFace();          // known visitor — drop any buffered face
-              sound.recognize();
-              setCurrentCustomer(customer);
-              logRecognition({
-                branchId: getBranchId(),
-                customerId: customer.id,
-                similarityScore: result.match.confidence,
-                result: 'recognized',
-              });
+      // ── 3) Recognition loop — SELF-SCHEDULING (re-arms only after each scan
+      // finishes) so heavy scans can't pile up and starve the TF backend, which
+      // was a big cause of "recognises me sometimes" on iPad. No-ops (but keeps
+      // re-arming) until a camera stream exists or while paused for sign-up.
+      const scanLoop = async () => {
+        if (!mountedRef.current) return;
+        const v = videoRef.current;
+        if (v && streamRef.current && !recognizedRef.current && !scanPausedRef.current && !routeScanPausedRef.current) {
+          try {
+            const result = await faceRecognition.scanFace(v);
+            if (result?.match) {
+              // Same id as last frame? grow the streak; else restart it.
+              const id = result.match.id;
+              const pm = pendingMatchRef.current;
+              pendingMatchRef.current = pm.id === id ? { id, count: pm.count + 1 } : { id, count: 1 };
+
+              if (pendingMatchRef.current.count >= 2) {   // confirmed over 2 frames
+                const customer = customersRef.current.find(c => c.id === id);
+                if (customer) {
+                  recognizedRef.current = true;   // guard against re-fire
+                  pendingMatchRef.current = { id: null, count: 0 };
+                  clearCapturedFace();            // known visitor — drop buffered face
+                  sound.recognize();
+                  setCurrentCustomer(customer);
+                  logRecognition({
+                    branchId: getBranchId(),
+                    customerId: customer.id,
+                    similarityScore: result.match.confidence,
+                    result: 'recognized',
+                  });
+                }
+              }
+            } else if (result) {
+              // Face present but unknown — reset the streak, buffer for sign-up.
+              pendingMatchRef.current = { id: null, count: 0 };
+              if (capturedFaceRef.current.length < MAX_CAPTURED_SAMPLES) {
+                capturedFaceRef.current = [...capturedFaceRef.current, result.descriptor];
+                setCapturedFace(capturedFaceRef.current);
+              }
+            } else {
+              pendingMatchRef.current = { id: null, count: 0 };   // no face → reset streak
             }
-          } else {
-            // Unknown face present — quietly buffer it for sign-up at checkout.
-            if (capturedFaceRef.current.length < MAX_CAPTURED_SAMPLES) {
-              capturedFaceRef.current = [...capturedFaceRef.current, result.descriptor];
-              setCapturedFace(capturedFaceRef.current);
-            }
+          } catch {
+            // ignore individual frame errors
           }
-        } catch {
-          // ignore individual frame errors
         }
-      }, 500);
+        if (mountedRef.current) intervalRef.current = window.setTimeout(scanLoop, SCAN_INTERVAL_MS);
+      };
+      scanLoop();
     };
 
     init();
 
     return () => {
       mountedRef.current = false;
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) clearTimeout(intervalRef.current);   // self-scheduled via setTimeout now
       if (notFoundTimerRef.current) clearTimeout(notFoundTimerRef.current);
       streamRef.current?.getTracks().forEach(t => t.stop());
     };
   }, []);
 
   return (
-    <FaceRecognitionContext.Provider value={{ scanState, stream, products, loyaltyConfig, branchId, branch, kiosk, capturedFace, clearCapturedFace, captureNow }}>
-      {/* Single hidden video element — shared across the whole app */}
-      <video ref={videoRef} style={{ display: 'none' }} muted playsInline />
+    <FaceRecognitionContext.Provider value={{ scanState, stream, products, loyaltyConfig, branchId, branch, kiosk, capturedFace, clearCapturedFace, captureNow, pauseScanning, resumeScanning, captureSample }}>
+      {/* Single shared camera element. Kept RENDERED but visually hidden (1px,
+          off-screen) — NOT display:none, because iOS Safari stops decoding
+          frames for display:none/hidden video, which broke recognition. */}
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        autoPlay
+        aria-hidden="true"
+        style={{ position: 'fixed', top: 0, left: 0, width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+      />
       {children}
     </FaceRecognitionContext.Provider>
   );

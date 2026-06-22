@@ -20,6 +20,8 @@ export const Cart: React.FC = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [appliedReward, setAppliedReward] = useState<Reward | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const submittingRef = useRef(false);   // blocks double-tap → no duplicate orders
 
   // Load redeemable rewards the member can afford.
@@ -36,10 +38,16 @@ export const Cart: React.FC = () => {
   const discount = appliedReward ? Math.min(appliedReward.amount, subtotal) : 0;
   const taxed = (subtotal - discount) * 1.08;
 
-  // Persist the order (+ points) and head to the success screen.
+  // Persist the order (+ points), and only THEN clear the cart and show success.
+  // Previously we navigated optimistically before the save — a failed save left
+  // the customer happy but the barista with no order. Now a failure keeps the
+  // cart and surfaces a retry.
   const finalizeOrder = async (customer: LoyaltyCustomer | null) => {
     if (submittingRef.current) return;   // already checking out — ignore repeat taps
     submittingRef.current = true;
+    setProcessing(true);
+    setCheckoutError('');
+
     const sub = getCartTotal();
     const disc = customer && appliedReward ? Math.min(appliedReward.amount, sub) : 0;
     const total = Number(((sub - disc) * 1.08).toFixed(2));
@@ -56,30 +64,42 @@ export const Cart: React.FC = () => {
       modifiers: it.modifiers,
     }));
 
+    let ok = true;
+    try {
+      if (branchId) {
+        const res = await createOrder({
+          branchId,
+          customerId: customer?.id ?? null,
+          customerName: customer?.name ?? null,
+          items: orderItems,
+          subtotal: sub,
+          discountTotal: disc,
+          total,
+          pointsPerDollar: loyaltyConfig.pointsPerDollar,
+          pointsRedeemed: redeemed,
+        });
+        if (!res) ok = false;
+        else if (customer && res.newBalance != null) updateCustomerPoints(customer.id, res.newBalance);
+      } else if (customer) {
+        // Branch not resolved (DB unseeded) — at least keep loyalty points working.
+        const newTotal = await awardPoints(customer.id, earned);
+        if (newTotal != null) updateCustomerPoints(customer.id, newTotal);
+      }
+    } catch {
+      ok = false;
+    }
+
+    if (!ok) {
+      submittingRef.current = false;   // allow a retry; cart kept intact
+      setProcessing(false);
+      setCheckoutError(t('cart.orderFailed'));
+      return;
+    }
+
     clearCart();
     navigate('/checkout-success', customer
       ? { state: { pointsEarned: earned, customerName: customer.name } }
       : undefined);
-
-    // Persist in the background; update local balance optimistically.
-    if (branchId) {
-      const res = await createOrder({
-        branchId,
-        customerId: customer?.id ?? null,
-        customerName: customer?.name ?? null,
-        items: orderItems,
-        subtotal: sub,
-        discountTotal: disc,
-        total,
-        pointsPerDollar: loyaltyConfig.pointsPerDollar,
-        pointsRedeemed: redeemed,
-      });
-      if (customer && res?.newBalance != null) updateCustomerPoints(customer.id, res.newBalance);
-    } else if (customer) {
-      // Branch not resolved (DB unseeded) — at least keep loyalty points working.
-      const newTotal = await awardPoints(customer.id, earned);
-      if (newTotal != null) updateCustomerPoints(customer.id, newTotal);
-    }
   };
 
   const handleCheckout = () => {
@@ -217,9 +237,10 @@ export const Cart: React.FC = () => {
               <span>{t('cart.total')}</span>
               <span>${taxed.toFixed(2)}</span>
             </div>
-            <button className="checkout-btn" onClick={handleCheckout}>
-              <CreditCard size={20} /> {t('cart.checkout')}
+            <button className="checkout-btn" onClick={handleCheckout} disabled={processing}>
+              <CreditCard size={20} /> {processing ? t('cart.processing') : t('cart.checkout')}
             </button>
+            {checkoutError && <p className="checkout-error">{checkoutError}</p>}
           </GlassCard>
         </div>
       </div>

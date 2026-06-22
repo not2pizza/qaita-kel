@@ -260,6 +260,11 @@
   color: white;
 }
 
+/* Multiple-select reached its max — unselected options are locked out. */
+.option-btn.locked {
+  opacity: 0.4;
+}
+
 .option-btn span {
   position: relative;
   z-index: 2;

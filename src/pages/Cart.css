@@ -243,4 +243,14 @@
   justify-content: center;
   gap: var(--spacing-sm);
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  transition: opacity 0.2s;
+}
+.checkout-btn:disabled { opacity: 0.6; }
+
+.checkout-error {
+  margin-top: var(--spacing-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #dc2626;
+  text-align: center;
 }

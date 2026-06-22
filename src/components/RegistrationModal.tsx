@@ -4,7 +4,6 @@ import { ScanFace, Shuffle, ArrowRight, Sparkles, Check } from 'lucide-react';
 import { findCustomerByPhone, addFaceProfile, enrollCustomer, getLastEnrollError } from '../lib/supabaseService';
 import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
 import { useLanguage } from '../i18n/LanguageProvider';
-import { faceRecognition } from '../services/faceRecognition';
 import { pickRandomName } from '../data/names';
 import { sound } from '../lib/sound';
 import type { LoyaltyCustomer } from '../store/useLoyaltyStore';
@@ -26,7 +25,7 @@ const TARGET_SAMPLES = 8;   // keep scanning up to this many while the modal is 
 export const RegistrationModal: React.FC<Props> = ({
   open, capturedFace, captureNow, welcomeBonus, onComplete, onSkip,
 }) => {
-  const { stream } = useFaceRecognition();
+  const { stream, pauseScanning, resumeScanning, captureSample } = useFaceRecognition();
   const { t } = useLanguage();
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
@@ -35,12 +34,12 @@ export const RegistrationModal: React.FC<Props> = ({
   const [error, setError] = useState('');
   const [sampleCount, setSampleCount] = useState(0);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const samplesRef = useRef<number[][]>([]);
 
-  // While the modal is open, actively scan the visitor's face from the live
-  // camera (they're looking right at the kiosk as they type their number). This
-  // is far more reliable than the passive background buffer.
+  // While the modal is open, actively capture the visitor's face from the SHARED
+  // camera (they're looking right at the kiosk as they type their number).
+  // We PAUSE the background recogniser first so only one face detector runs on
+  // the camera at a time — running both at once made capture unreliable.
   useEffect(() => {
     if (!open) {
       samplesRef.current = [];
@@ -52,27 +51,25 @@ export const RegistrationModal: React.FC<Props> = ({
     samplesRef.current = capturedFace.length > 0 ? [...capturedFace] : [];
     setSampleCount(samplesRef.current.length);
 
-    const v = videoRef.current;
-    if (v && stream) {
-      v.srcObject = stream;
-      v.play().catch(() => {});
-    }
-
+    pauseScanning();
     let alive = true;
-    const id = window.setInterval(async () => {
-      if (!alive || !videoRef.current) return;
-      if (samplesRef.current.length >= TARGET_SAMPLES) return;
-      try {
-        const d = await faceRecognition.captureDescriptor(videoRef.current);
+    let timer: number;
+    const tick = async () => {
+      if (!alive) return;
+      if (samplesRef.current.length < TARGET_SAMPLES) {
+        const d = await captureSample();
         if (d && alive) {
           samplesRef.current = [...samplesRef.current, d];
           setSampleCount(samplesRef.current.length);
         }
-      } catch { /* ignore individual frames */ }
-    }, 500);
+      }
+      if (alive) timer = window.setTimeout(tick, 450);   // re-arm AFTER each capture
+    };
+    tick();
 
-    return () => { alive = false; clearInterval(id); };
-  }, [open, stream]);
+    return () => { alive = false; clearTimeout(timer); resumeScanning(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const reset = () => { setStep('phone'); setPhone(''); setName(''); setBusy(false); setError(''); };
 
@@ -83,8 +80,12 @@ export const RegistrationModal: React.FC<Props> = ({
     return captureNow();
   };
 
+  // Validate by digit count (tolerant of +, spaces, dashes the user may type).
+  const phoneDigits = phone.replace(/\D/g, '');
+  const phoneValid = phoneDigits.length >= 9;
+
   const handlePhoneNext = async () => {
-    if (busy || phone.trim().length < 5) return;
+    if (busy || !phoneValid) return;
     setBusy(true);
     sound.tap();
 
@@ -109,6 +110,16 @@ export const RegistrationModal: React.FC<Props> = ({
     setBusy(true);
     setError('');
     const face = await collectFace();
+
+    // A new member is only useful if we actually saved their face (otherwise the
+    // kiosk can never recognise them). Require one when a camera is available;
+    // if there's no camera at all, allow a phone-only account.
+    if (stream && face.length === 0) {
+      setBusy(false);
+      setError(t('reg.needFace'));
+      return;
+    }
+
     const customer = await enrollCustomer(finalName, face, {
       phone: phone.trim() || undefined,
       welcomeBonus,
@@ -137,8 +148,7 @@ export const RegistrationModal: React.FC<Props> = ({
           className="reg-backdrop"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         >
-          {/* Hidden capture surface — bound to the shared camera stream. */}
-          <video ref={videoRef} style={{ display: 'none' }} muted playsInline autoPlay />
+          {/* Capture uses the shared camera via captureSample() — no own <video>. */}
 
           <motion.div
             className="reg-modal liquid-glass"
@@ -170,12 +180,15 @@ export const RegistrationModal: React.FC<Props> = ({
                     inputMode="tel"
                     placeholder={t('reg.phonePlaceholder')}
                     value={phone}
-                    onChange={e => setPhone(e.target.value)}
+                    onChange={e => setPhone(e.target.value.replace(/[^\d+\s()-]/g, ''))}
                     maxLength={20}
                     autoFocus
                   />
+                  {phone.length > 0 && !phoneValid && (
+                    <span className="reg-hint">{t('reg.phoneTooShort')}</span>
+                  )}
 
-                  <button className="reg-btn-primary" disabled={busy || phone.trim().length < 5} onClick={handlePhoneNext}>
+                  <button className="reg-btn-primary" disabled={busy || !phoneValid} onClick={handlePhoneNext}>
                     {busy ? t('reg.checking') : <>{t('reg.continue')} <ArrowRight size={18} /></>}
                   </button>
                   <button className="reg-btn-ghost" disabled={busy} onClick={handleSkip}>
