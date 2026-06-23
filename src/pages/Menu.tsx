@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Flame, RotateCcw, MapPin } from 'lucide-react';
+import { Star, Flame, RotateCcw } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { ProductDetailModal } from '../components/ProductDetailModal';
 import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
-import { useLoyaltyStore, getTierProgressInfo } from '../store/useLoyaltyStore';
+import { useLoyaltyStore } from '../store/useLoyaltyStore';
 import { useCartStore } from '../store/useCartStore';
 import { fetchRecentOrders, type PastOrder } from '../lib/supabaseService';
 import { orderToCartItems, aggregateItems } from '../lib/reorder';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { type TransKey } from '../i18n/translations';
 import { type Product } from '../data/products';
+import { formatTenge } from '../lib/currency';
 import './Menu.css';
 
 const CATEGORIES = ['All', 'Hot', 'Cold', 'Blended'] as const;
@@ -21,26 +22,13 @@ export const Menu: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [recentOrders, setRecentOrders] = useState<PastOrder[]>([]);
-  const { scanState, products, branch } = useFaceRecognition();
+  const { scanState, products } = useFaceRecognition();
   const { currentCustomer } = useLoyaltyStore();
   const addItem = useCartStore(s => s.addItem);
   const { t } = useLanguage();
 
   const recognized = scanState === 'recognized' && !!currentCustomer;
   const firstName = currentCustomer?.name.split(' ')[0] ?? '';
-
-  // Render a greeting sub whose {points} slot is a bold accent span. Calling
-  // t(key) with no vars leaves the literal "{points}" token, so we split on it.
-  const richGreeting = (key: TransKey, points: number) => {
-    const [before, after = ''] = t(key).split('{points}');
-    return (
-      <>
-        {before}
-        <strong>{points.toLocaleString()} {t('common.points')}</strong>
-        {after}
-      </>
-    );
-  };
 
   // Real "Order again" — the recognised member's actual past orders.
   useEffect(() => {
@@ -94,7 +82,6 @@ export const Menu: React.FC = () => {
 
   return (
     <div className="menu-page">
-      {/* Personalized greeting (replaces the old banner pill) */}
       {recognized ? (
         <motion.div
           className="menu-greeting"
@@ -104,27 +91,6 @@ export const Menu: React.FC = () => {
           <h2 className="greeting-title">
             {winBack ? t('menu.missedYou', { name: firstName }) : t('menu.welcomeBack', { name: firstName })}
           </h2>
-          <p className="greeting-sub">
-            {richGreeting(winBack ? 'menu.missedYouSub' : 'menu.greetingSub', currentCustomer!.points)}
-          </p>
-          {(() => {
-            const tp = getTierProgressInfo(currentCustomer!.points);
-            return tp.next ? (
-              <div className="tier-progress">
-                <div className="tier-progress-bar"><span style={{ width: `${tp.pct}%` }} /></div>
-                <span className="tier-progress-label">
-                  {(() => {
-                    const [a, b = ''] = t('menu.ptsToNext', { tier: tp.next }).split('{pts}');
-                    return <>{a}<strong>{tp.toNext.toLocaleString()}</strong>{b}</>;
-                  })()}
-                </span>
-              </div>
-            ) : (
-              <div className="tier-progress">
-                <span className="tier-progress-label">{t('menu.topTier', { tier: tp.current })}</span>
-              </div>
-            );
-          })()}
         </motion.div>
       ) : scanState === 'not-found' ? (
         <motion.div
@@ -133,7 +99,6 @@ export const Menu: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
         >
           <h2 className="greeting-title">{t('menu.welcome')}</h2>
-          <p className="greeting-sub">{t('menu.welcomeSub')}</p>
         </motion.div>
       ) : null}
 
@@ -166,7 +131,7 @@ export const Menu: React.FC = () => {
                   );
                 })()}
                 <div className="reorder-order-bottom">
-                  <span className="reorder-order-total">${order.total.toFixed(2)}</span>
+                  <span className="reorder-order-total">{formatTenge(order.total)}</span>
                   <span className="reorder-order-cta"><RotateCcw size={14} /> {t('menu.reorder')}</span>
                 </div>
               </button>
@@ -184,7 +149,7 @@ export const Menu: React.FC = () => {
               <p className="hero-desc">{featuredProduct.description}</p>
               <div className="hero-actions">
                 <button className="hero-btn" onClick={() => setSelectedProduct(featuredProduct)}>
-                  {t('menu.orderNow')} · ${featuredProduct.price.toFixed(2)}
+                  {t('menu.orderNow')} · {formatTenge(featuredProduct.price)}
                 </button>
                 {featuredProduct.rating != null && (
                   <span className="hero-rating"><Star size={15} fill="currentColor" /> {featuredProduct.rating}</span>
@@ -199,12 +164,6 @@ export const Menu: React.FC = () => {
       )}
 
       <header className="menu-header">
-        {branch?.name && (
-          <span className="menu-branch">
-            <MapPin size={14} strokeWidth={2.4} />
-            {branch.name}{branch.address ? ` · ${branch.address}` : ''}
-          </span>
-        )}
         <h2>{t('menu.ourMenu')}</h2>
         <p>{t('menu.ourMenuSub')}</p>
       </header>
@@ -260,7 +219,7 @@ export const Menu: React.FC = () => {
                   </div>
                 )}
                 <div className="product-footer">
-                  <p className="product-price">${product.price.toFixed(2)}</p>
+                  <p className="product-price">{formatTenge(product.price)}</p>
                   <button
                     className="add-btn"
                     aria-label="Customize and add to cart"

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Star, RotateCcw, MapPin } from 'lucide-react';
+import { ChevronRight, Star, RotateCcw, MapPin, UserX } from 'lucide-react';
 import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
 import { useLoyaltyStore } from '../store/useLoyaltyStore';
 import { getTier } from '../store/useLoyaltyStore';
@@ -12,15 +12,17 @@ import { useBrand } from '../contexts/BrandContext';
 import { useLanguage } from '../i18n/LanguageProvider';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { sound } from '../lib/sound';
+import { formatTenge } from '../lib/currency';
 import './Home.css';
 
 const TIER_EMOJI: Record<string, string> = { Bronze: '🥉', Silver: '🥈', Gold: '🥇' };
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { scanState, products, branch, kiosk } = useFaceRecognition();
-  const { currentCustomer } = useLoyaltyStore();
+  const { scanState, products, branch, kiosk, clearCapturedFace } = useFaceRecognition();
+  const { currentCustomer, clearCurrentCustomer } = useLoyaltyStore();
   const addItem = useCartStore(s => s.addItem);
+  const clearCart = useCartStore(s => s.clearCart);
   const brand = useBrand();
   const { t } = useLanguage();
   const [usual, setUsual] = useState<PastOrder | null>(null);
@@ -42,6 +44,14 @@ export const Home: React.FC = () => {
     orderToCartItems(usual, products).forEach(addItem);
     sound.tap();
     navigate('/cart');
+  };
+
+  const handleNotMe = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    sound.tap();
+    clearCurrentCustomer();
+    clearCapturedFace();
+    clearCart();
   };
   const firstName = currentCustomer?.name.split(' ')[0] ?? '';
   const initials = currentCustomer
@@ -81,6 +91,24 @@ export const Home: React.FC = () => {
 
   return (
     <div className="home-container" onClick={() => { sound.tap(); navigate('/menu'); }}>
+      <AnimatePresence>
+        {recognized && (
+          <motion.div
+            className="home-not-me"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="not-me-container">
+              <button className="not-me-btn" onClick={handleNotMe}>
+                <UserX size={15} />
+                <span>{t('home.notMe')}</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="home-lang">
         <LanguageToggle variant="light" />
       </div>
@@ -231,7 +259,7 @@ export const Home: React.FC = () => {
               <RotateCcw size={18} />
               <span className="usual-btn-text">
                 <span className="usual-btn-label">{t('home.reorderUsual')}</span>
-                <span className="usual-btn-sub">{orderSummaryText(usual)} · ${usual.total.toFixed(2)}</span>
+                <span className="usual-btn-sub">{orderSummaryText(usual)} · {formatTenge(usual.total)}</span>
               </span>
             </motion.button>
           )}

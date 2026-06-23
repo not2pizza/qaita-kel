@@ -5,6 +5,7 @@ import { useCartStore, type SelectedModifier } from '../store/useCartStore';
 import { useFaceRecognition } from '../contexts/FaceRecognitionContext';
 import { fetchProductModifiers, type ModifierGroup } from '../lib/supabaseService';
 import { sound } from '../lib/sound';
+import { formatTenge } from '../lib/currency';
 import './ProductDetailModal.css';
 
 interface Product {
@@ -30,17 +31,17 @@ const FALLBACK_MODIFIERS: ModifierGroup[] = [
   {
     id: 'fb-size', dbId: null, name: 'Size', selectionType: 'single', minSelections: 1, maxSelections: 1,
     options: [
-      { id: 'fb-s', dbId: null, name: 'Small', priceDelta: 0, isDefault: false },
-      { id: 'fb-m', dbId: null, name: 'Medium', priceDelta: 0.5, isDefault: true },
-      { id: 'fb-l', dbId: null, name: 'Large', priceDelta: 1.0, isDefault: false },
+      { id: 'fb-s', dbId: null, name: 'Small', priceDelta: -200, isDefault: false },
+      { id: 'fb-m', dbId: null, name: 'Medium', priceDelta: 0, isDefault: true },
+      { id: 'fb-l', dbId: null, name: 'Large', priceDelta: 300, isDefault: false },
     ],
   },
   {
     id: 'fb-milk', dbId: null, name: 'Milk', selectionType: 'single', minSelections: 1, maxSelections: 1,
     options: [
       { id: 'fb-whole', dbId: null, name: 'Whole Milk', priceDelta: 0, isDefault: true },
-      { id: 'fb-oat', dbId: null, name: 'Oat Milk', priceDelta: 0.5, isDefault: false },
-      { id: 'fb-almond', dbId: null, name: 'Almond Milk', priceDelta: 0.5, isDefault: false },
+      { id: 'fb-oat', dbId: null, name: 'Oat Milk', priceDelta: 300, isDefault: false },
+      { id: 'fb-almond', dbId: null, name: 'Almond Milk', priceDelta: 350, isDefault: false },
       { id: 'fb-soy', dbId: null, name: 'Soy Milk', priceDelta: 0, isDefault: false },
     ],
   },
@@ -48,9 +49,9 @@ const FALLBACK_MODIFIERS: ModifierGroup[] = [
     id: 'fb-syrup', dbId: null, name: 'Syrup', selectionType: 'single', minSelections: 1, maxSelections: 1,
     options: [
       { id: 'fb-none', dbId: null, name: 'None', priceDelta: 0, isDefault: true },
-      { id: 'fb-vanilla', dbId: null, name: 'Vanilla', priceDelta: 0.25, isDefault: false },
-      { id: 'fb-caramel', dbId: null, name: 'Caramel', priceDelta: 0.25, isDefault: false },
-      { id: 'fb-hazelnut', dbId: null, name: 'Hazelnut', priceDelta: 0.25, isDefault: false },
+      { id: 'fb-vanilla', dbId: null, name: 'Vanilla', priceDelta: 200, isDefault: false },
+      { id: 'fb-caramel', dbId: null, name: 'Caramel', priceDelta: 200, isDefault: false },
+      { id: 'fb-hazelnut', dbId: null, name: 'Hazelnut', priceDelta: 200, isDefault: false },
     ],
   },
 ];
@@ -81,8 +82,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // Load this product's modifier groups (branch-aware), falling back to the
-  // hardcoded set when the product/branch has none configured.
+  // Load this product's modifier groups (branch-aware). The hardcoded modifier
+  // set is only for bundled fallback products, not live DB products.
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -91,7 +92,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
         try { g = await fetchProductModifiers(product.id, branchId); } catch { g = []; }
       }
       if (!alive) return;
-      if (g.length === 0) g = FALLBACK_MODIFIERS;
+      if (g.length === 0 && product.id.startsWith('seed-')) g = FALLBACK_MODIFIERS;
       setGroups(g);
       const init: Record<string, string[]> = {};
       for (const grp of g) init[grp.id] = defaultSelection(grp);
@@ -187,7 +188,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   </div>
                 )}
                 {product.description && <p className="modal-desc">{product.description}</p>}
-                <p className="modal-price">${finalPrice.toFixed(2)}</p>
+                <p className="modal-price">{formatTenge(finalPrice)}</p>
 
                 {groups.map(g => {
                   const selected = sel[g.id] ?? [];
@@ -224,7 +225,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                                 <div className="option-active-bg option-active-static" />
                               )}
                               <span>
-                                {o.name}{o.priceDelta > 0 && ` (+$${o.priceDelta.toFixed(2)})`}
+                                {o.name}{o.priceDelta > 0 && ` (+${formatTenge(o.priceDelta)})`}
                               </span>
                             </button>
                           );
@@ -246,7 +247,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                     {added ? (
                       <><Check size={20} /> Added to Cart</>
                     ) : (
-                      `Add to Cart - $${finalPrice.toFixed(2)}`
+                      `Add to Cart - ${formatTenge(finalPrice)}`
                     )}
                   </motion.button>
                   <div className="add-to-cart-glow" />

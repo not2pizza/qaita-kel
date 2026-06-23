@@ -654,7 +654,7 @@ export interface Reward {
   title: string;
   rewardType: string;             // 'discount' | 'free_item' | 'points' | 'custom'
   costPoints: number;
-  amount: number;                 // $ discount applied (from config.amount)
+  amount: number;                 // currency discount applied (from config.amount)
 }
 
 export async function fetchRewards(): Promise<Reward[]> {

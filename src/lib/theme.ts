@@ -26,7 +26,7 @@ export const DEFAULT_BRAND: BrandSettings = {
   accentHover: '#e56820',
   bgColor: '#f7f9fa',
   heroImageUrl: null,
-  defaultLanguage: 'en',
+  defaultLanguage: 'ru',
 };
 
 // "#f87b32" → "248, 123, 50" (for rgba(var(--accent-rgb), a) in CSS). Returns

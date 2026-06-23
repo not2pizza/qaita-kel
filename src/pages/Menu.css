@@ -1,5 +1,7 @@
 .menu-page {
-  padding: var(--spacing-xl);
+  padding: 0 var(--spacing-xl);
+  margin-top: 30px;
+  margin-bottom: 30px;
   /* Let the whole page grow with its content so the parent .page-wrapper scrolls
      everything together (greeting + Order again + hero + grid) — not just the
      product grid. min-height fills the viewport when content is short. */

@@ -15,7 +15,7 @@ create table if not exists brand_settings (
   accent_hover     text default '#e56820',      -- --primary-hover
   bg_color         text default '#f7f9fa',      -- --bg-color
   hero_image_url   text,                        -- attract-screen background
-  default_language text default 'en',           -- 'en' | 'ru' | 'kk'
+  default_language text default 'ru',           -- 'en' | 'ru' | 'kk'
   settings         jsonb default '{}',          -- extensible (fonts, blob colors, …)
   updated_at       timestamptz default now()
 );

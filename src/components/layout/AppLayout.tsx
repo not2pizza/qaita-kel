@@ -5,9 +5,9 @@ import { ShoppingBag, Star, ArrowRight } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import { useLoyaltyStore } from '../../store/useLoyaltyStore';
 import { useFaceRecognition } from '../../contexts/FaceRecognitionContext';
-import { useBrand } from '../../contexts/BrandContext';
 import { useLanguage } from '../../i18n/LanguageProvider';
 import { LanguageToggle } from '../LanguageToggle';
+import { formatTenge } from '../../lib/currency';
 import './AppLayout.css';
 
 export const AppLayout: React.FC = () => {
@@ -17,7 +17,6 @@ export const AppLayout: React.FC = () => {
   const cartTotal = useCartStore(state => state.getCartTotal());
   const { currentCustomer } = useLoyaltyStore();
   const { scanState } = useFaceRecognition();
-  const brand = useBrand();
   const { t } = useLanguage();
 
   const pressTimerRef = React.useRef<number | null>(null);
@@ -64,26 +63,20 @@ export const AppLayout: React.FC = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 260, damping: 26, delay: 0.15 }}
         >
-          <motion.button
-            className="dock-brand"
-            onPointerDown={handleLogoPressStart}
-            onPointerUp={handleLogoPressEnd}
-            onPointerLeave={handleLogoPressEnd}
-            animate={{ scale: isPressingLogo ? 0.82 : 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            title="Hold to open admin"
-          >
-            {brand.logoUrl
-              ? <img src={brand.logoUrl} alt={brand.brandName} className="dock-brand-img" />
-              : brand.logoEmoji}
-          </motion.button>
-
           {recognized && (
-            <div className="dock-points" title="Your points balance">
+            <motion.button
+              className="dock-points"
+              onPointerDown={handleLogoPressStart}
+              onPointerUp={handleLogoPressEnd}
+              onPointerLeave={handleLogoPressEnd}
+              animate={{ scale: isPressingLogo ? 0.92 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              title="Hold to open admin"
+            >
               <Star size={14} fill="currentColor" />
               <span className="dock-points-value">{currentCustomer!.points.toLocaleString()}</span>
               <span className="dock-points-label">{t('common.pts')}</span>
-            </div>
+            </motion.button>
           )}
 
           <LanguageToggle variant="dark" className="dock-lang" />
@@ -111,7 +104,7 @@ export const AppLayout: React.FC = () => {
                 </motion.span>
               </span>
               <span className="dock-cart-text">{t('dock.viewOrder')}</span>
-              <span className="dock-cart-total">${cartTotal.toFixed(2)}</span>
+              <span className="dock-cart-total">{formatTenge(cartTotal)}</span>
               <ArrowRight size={18} />
             </motion.button>
           ) : (

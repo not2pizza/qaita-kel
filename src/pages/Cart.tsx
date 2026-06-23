@@ -9,6 +9,7 @@ import { useLanguage } from '../i18n/LanguageProvider';
 import { createOrder, awardPoints, fetchRewards, type NewOrderItem, type Reward } from '../lib/supabaseService';
 import { GlassCard } from '../components/ui/GlassCard';
 import { RegistrationModal } from '../components/RegistrationModal';
+import { formatTenge, replaceDollarAmounts } from '../lib/currency';
 import './Cart.css';
 
 export const Cart: React.FC = () => {
@@ -37,6 +38,7 @@ export const Cart: React.FC = () => {
   const subtotal = getCartTotal();
   const discount = appliedReward ? Math.min(appliedReward.amount, subtotal) : 0;
   const taxed = (subtotal - discount) * 1.08;
+  const rewardTitle = (reward: Reward) => replaceDollarAmounts(reward.title);
 
   // Persist the order (+ points), and only THEN clear the cart and show success.
   // Previously we navigated optimistically before the save — a failed save left
@@ -171,7 +173,7 @@ export const Cart: React.FC = () => {
                         .join(' · ')}
                     </p>
                   )}
-                  <p className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="cart-item-price">{formatTenge(item.price * item.quantity)}</p>
                 </div>
                 <div className="cart-item-actions">
                   <div className="quantity-controls">
@@ -209,7 +211,7 @@ export const Cart: React.FC = () => {
                         onClick={() => setAppliedReward(active ? null : r)}
                       >
                         {active && <Check size={13} />}
-                        <span>{r.title}</span>
+                        <span>{rewardTitle(r)}</span>
                         <span className="reward-cost">{r.costPoints} pts</span>
                       </button>
                     );
@@ -220,22 +222,22 @@ export const Cart: React.FC = () => {
 
             <div className="summary-row">
               <span>{t('cart.subtotal')}</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatTenge(subtotal)}</span>
             </div>
             {discount > 0 && (
               <div className="summary-row discount">
-                <span>{t('cart.reward')}{appliedReward ? ` · ${appliedReward.title}` : ''}</span>
-                <span>−${discount.toFixed(2)}</span>
+                <span>{t('cart.reward')}{appliedReward ? ` · ${rewardTitle(appliedReward)}` : ''}</span>
+                <span>−{formatTenge(discount)}</span>
               </div>
             )}
             <div className="summary-row">
               <span>{t('cart.tax')}</span>
-              <span>${((subtotal - discount) * 0.08).toFixed(2)}</span>
+              <span>{formatTenge((subtotal - discount) * 0.08)}</span>
             </div>
             <div className="summary-divider" />
             <div className="summary-row total">
               <span>{t('cart.total')}</span>
-              <span>${taxed.toFixed(2)}</span>
+              <span>{formatTenge(taxed)}</span>
             </div>
             <button className="checkout-btn" onClick={handleCheckout} disabled={processing}>
               <CreditCard size={20} /> {processing ? t('cart.processing') : t('cart.checkout')}

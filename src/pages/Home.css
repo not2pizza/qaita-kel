@@ -28,6 +28,57 @@
   z-index: 3;
 }
 
+.home-not-me {
+  position: absolute;
+  top: calc(var(--spacing-lg) + env(safe-area-inset-top, 0px));
+  left: calc(var(--spacing-lg) + env(safe-area-inset-left, 0px));
+  z-index: 3;
+}
+
+.not-me-container {
+  display: inline-flex;
+  align-items: center;
+  width: 144px;
+  box-sizing: border-box;
+  padding: 4px;
+  border-radius: var(--border-radius-pill);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.not-me-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: var(--border-radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.28);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.not-me-btn:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.not-me-btn svg {
+  opacity: 0.95;
+  flex-shrink: 0;
+}
+
 .brand-logo-img {
   height: clamp(4rem, 7vw, 6rem);
   width: auto;

@@ -15,6 +15,7 @@ const en = {
   'home.tapToOrder': 'Tap to Order',
   'home.startOrder': 'Start your order, {name}',
   'home.reorderUsual': 'Reorder your usual',
+  'home.notMe': 'Not me',
 
   'menu.welcome': 'Welcome 👋',
   'menu.welcomeSub': 'Order your favourite — add your number at checkout to start earning points.',
@@ -95,6 +96,7 @@ const ru: Record<TransKey, string> = {
   'home.tapToOrder': 'Нажмите, чтобы заказать',
   'home.startOrder': 'Начните заказ, {name}',
   'home.reorderUsual': 'Повторить как обычно',
+  'home.notMe': 'Не я',
 
   'menu.welcome': 'Добро пожаловать 👋',
   'menu.welcomeSub': 'Закажите любимый напиток — укажите номер при оплате и копите баллы.',
@@ -173,6 +175,7 @@ const kk: Record<TransKey, string> = {
   'home.tapToOrder': 'Тапсырыс беру үшін басыңыз',
   'home.startOrder': 'Тапсырысты бастаңыз, {name}',
   'home.reorderUsual': 'Әдеттегідей қайталау',
+  'home.notMe': 'Мен емес',
 
   'menu.welcome': 'Қош келдіңіз 👋',
   'menu.welcomeSub': 'Сүйікті сусыныңызға тапсырыс беріңіз — төлеу кезінде нөміріңізді енгізіп, ұпай жинаңыз.',

@@ -2,7 +2,7 @@
   display: flex;
   width: 100%;
   height: 100%;
-  padding: var(--spacing-lg);
+  padding: 0 var(--spacing-lg);
   gap: var(--spacing-lg);
   /* Clean, calm backdrop for content screens — keeps text crisp and hides the
      attract-screen animations (marquee/blobs) that made the menu look "dirty".

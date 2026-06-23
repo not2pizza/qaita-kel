@@ -68,9 +68,9 @@ if (!branch) {
   const { count } = await sb.from('rewards').select('id', { count: 'exact', head: true });
   if (!count) {
     const { error } = await sb.from('rewards').insert([
-      { title: '$1 off',       reward_type: 'discount',  cost_points: 100, config: { amount: 1 },   is_active: true },
-      { title: '$3 off',       reward_type: 'discount',  cost_points: 250, config: { amount: 3 },   is_active: true },
-      { title: 'Free coffee',  reward_type: 'free_item', cost_points: 400, config: { amount: 4.5 }, is_active: true },
+      { title: '500 ₸ off',    reward_type: 'discount',  cost_points: 100, config: { amount: 500 },  is_active: true },
+      { title: '1 000 ₸ off',  reward_type: 'discount',  cost_points: 250, config: { amount: 1000 }, is_active: true },
+      { title: 'Free coffee',  reward_type: 'free_item', cost_points: 400, config: { amount: 1800 }, is_active: true },
     ]);
     if (error) throw new Error('rewards: ' + error.message);
     log('✓ rewards created');
@@ -89,7 +89,7 @@ if (!branch) {
       accent_color: '#f87b32',
       accent_hover: '#e56820',
       bg_color: '#f7f9fa',
-      default_language: 'en',
+      default_language: 'ru',
     });
     if (error) throw new Error('brand_settings: ' + error.message);
     log('✓ brand_settings created');
